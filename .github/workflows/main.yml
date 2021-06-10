@@ -1,0 +1,55 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Terraform GithubActions Demo
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    
+    env:
+      ARM_SUBSCRIPTION_ID: '3266dfec-55eb-43dc-8451-ce796a71af55'
+      ARM_TENANT_ID: '42ed51c2-2ced-46a9-b9c3-8e5b8b47c01f'
+      ARM_CLIENT_ID: 'c7d6e56e-bee7-409e-baad-f987a2b9eb42'
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      AZURE_STORAGE: 'terraformdemo123123'
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      
+      - name: Azure Login
+          uses: Azure/login@v1
+          with:
+            # Paste output of `az ad sp create-for-rbac` as value of secret variable: AZURE_CREDENTIALS
+            creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Runs a single command using the runners shell
+      - name: Build Terraform State
+        run: chmod +x ./tfstate.sh && ./tfstate.sh ${{ env.AZURE_STORAGE }}
+
+        - name: HashiCorp - Setup Terraform
+          uses: hashicorp/setup-terraform@v1.2.1
+          
+        - name: Terraform init
+          run: terraforn init -backend-config="storage_account_name${{ env.AZURE_STORAGE }}"
+          
+        - name: Terraform Plan
+          run: terraform plan -out=tfplan
+          
+        - name: terraform Apply
+          run: terraform apply tfplan
